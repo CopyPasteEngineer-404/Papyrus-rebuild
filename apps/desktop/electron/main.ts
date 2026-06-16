@@ -74,7 +74,7 @@ function isWithinWorkspace(filePath: string): boolean {
     // If realpath fails (file doesn't exist yet), fall back to non-symlink check
     const resolvedPath = path.resolve(filePath);
     const resolvedWorkspace = path.resolve(currentWorkspace);
-    return resolvedPath.startsWith(resolvedWorkspace + path.sep) || resolvedPath === resolvedWorkspace;
+    return resolvedPath === resolvedWorkspace || resolvedPath.startsWith(resolvedWorkspace + path.sep);
   }
 }
 
@@ -296,7 +296,7 @@ async function setupCSP(): Promise<void> {
       });
     });
   } else {
-    // Production: tightened CSP — no unsafe-inline/unsafe-eval
+    // Production: tightened CSP — no unsafe-eval, unsafe-inline only for styles (required by Tailwind)
     await session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
       callback({
         responseHeaders: {
