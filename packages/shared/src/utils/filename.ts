@@ -1,10 +1,11 @@
 /**
  * Sanitize a string for use as a filename.
- * Removes all characters except alphanumeric, underscore, and hyphen,
- * then truncates to a maximum length.
+ * Preserves Unicode letters, digits, underscore, hyphen, space, and period.
+ * Removes only characters that are invalid across Windows/macOS/Linux.
+ * Truncates to a maximum length.
  */
 export function sanitizeFilename(name: string, maxLength: number = 100): string {
-  return name.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, maxLength);
+  return name.replace(/[<>:"/\\|?*\x00-\x1f]/g, '_').slice(0, maxLength);
 }
 
 /**
