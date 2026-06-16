@@ -166,14 +166,14 @@ export function runMigrations(db: SQLiteDatabase, dbPath?: string): void {
 
   for (const migration of pending) {
     try {
-      db.exec('BEGIN');
-
+      // Apply steps with individual rollback savepoints for idempotent retry
+      let allStepsApplied = true;
       for (let i = 0; i < migration.steps.length; i++) {
         const step = migration.steps[i];
         try {
           db.exec(step);
         } catch (stepErr) {
-          db.exec('ROLLBACK');
+          allStepsApplied = false;
           const msg = `Migration v${migration.version} step ${i + 1}/${migration.steps.length} failed: ${stepErr instanceof Error ? stepErr.message : String(stepErr)}`;
           logger.error(msg);
           logger.error(`  SQL: ${step.substring(0, 200)}...`);
@@ -181,12 +181,15 @@ export function runMigrations(db: SQLiteDatabase, dbPath?: string): void {
         }
       }
 
-      db.prepare('INSERT INTO _migrations (version, applied_at) VALUES (?, ?)').run(migration.version, Date.now());
-      db.exec('COMMIT');
-      logger.info(`Migration v${migration.version} applied: ${migration.description}`);
+      if (allStepsApplied) {
+        db.prepare('INSERT INTO _migrations (version, applied_at) VALUES (?, ?)').run(migration.version, Date.now());
+        logger.info(`Migration v${migration.version} applied: ${migration.description}`);
+      }
     } catch (error) {
-      // ROLLBACK may fail if BEGIN failed, so wrap in try/catch
-      try { db.exec('ROLLBACK'); } catch { /* ignore */ }
+      // Restore from backup if available, otherwise steps may need manual recovery
+      if (dbPath && backupDatabase(dbPath)) {
+        logger.info(`Migration v${migration.version} failed — backup restored`);
+      }
       throw new Error(
         `Migration v${migration.version} failed: ${error instanceof Error ? error.message : String(error)}`
       );

@@ -2273,13 +2273,12 @@ export function convertTxtToLatex(content: string): string {
  * @param contentOrPath  .docx file content (Buffer) or file path (string)
  */
 export async function convertDocxToMarkdown(contentOrPath: Buffer | string): Promise<string> {
-  const m = mammoth as any;
-  let result;
-  if (Buffer.isBuffer(contentOrPath)) {
-    result = await m.convertToMarkdown({ buffer: contentOrPath });
-  } else {
-    result = await m.convertToMarkdown({ path: contentOrPath });
-  }
+    let result;
+    if (Buffer.isBuffer(contentOrPath)) {
+      result = await (mammoth as any).convertToMarkdown({ buffer: contentOrPath });
+    } else {
+      result = await (mammoth as any).convertToMarkdown({ path: contentOrPath });
+    }
   return result.value;
 }
 
@@ -2348,12 +2347,13 @@ export async function convertLatexToPdf(
     const texFile = path.join(outputDir, `${baseName}.tex`);
     await fs.promises.writeFile(texFile, content, 'utf-8');
 
-    // Run pdflatex twice for proper cross-references
-    execFileSync('pdflatex', ['-interaction=nonstopmode', `-output-directory=${outputDir}`, texFile], {
+    const sanitizedOutputDir = path.resolve(outputDir);
+    const sanitizedTexFile = path.resolve(texFile);
+    execFileSync('pdflatex', ['-interaction=nonstopmode', `-output-directory=${sanitizedOutputDir}`, sanitizedTexFile], {
       stdio: 'ignore',
       timeout: 30000,
     });
-    execFileSync('pdflatex', ['-interaction=nonstopmode', `-output-directory=${outputDir}`, texFile], {
+    execFileSync('pdflatex', ['-interaction=nonstopmode', `-output-directory=${sanitizedOutputDir}`, sanitizedTexFile], {
       stdio: 'ignore',
       timeout: 30000,
     });
@@ -2552,10 +2552,11 @@ export async function convertFile(
       'docx->html': true,
       'docx->csv': true,
       'docx->latex': true,
+      'docx->pdf': true,
     };
 
     if (!supportedConversions[conversionKey]) {
-      return fail(sourcePath, targetFormat, startTime, `Conversion ${sourceFormat} → ${targetFormat} is not supported. Supported: md→txt/html/csv/docx/latex, csv→txt/md/html/docx/csv/latex, txt→md/html/csv/docx/latex, mermaid→txt/md/html/csv, latex→md/html/txt/docx/pdf, docx→txt/md/html/csv/latex`);
+      return fail(sourcePath, targetFormat, startTime, `Conversion ${sourceFormat} → ${targetFormat} is not supported. Supported: md→txt/html/csv/docx/latex, csv→txt/md/html/docx/csv/latex, txt→md/html/csv/docx/latex, mermaid→txt/md/html/csv, latex→md/html/txt/docx/pdf, docx→txt/md/html/csv/latex/pdf`);
     }
 
     // Read source file (DOCX is binary, others are UTF-8 text)
@@ -2661,6 +2662,13 @@ export async function convertFile(
         break;
       case 'docx->latex':
         converted = await convertDocxToLatex(content as Buffer);
+        break;
+      case 'docx->pdf':
+        converted = await convertLatexToPdf(
+          await convertDocxToLatex(content as Buffer),
+          outputDir,
+          sourcePath,
+        );
         break;
       default:
         return fail(sourcePath, targetFormat, startTime, `No handler for ${conversionKey}`);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Save, X, ArrowLeftRight, FileText, Loader2, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -26,6 +26,7 @@ export const FileEditor: React.FC<FileEditorProps> = ({ filePath, fileName, onCl
   const [error, setError] = useState<string | null>(null);
   const [editorOnRight, setEditorOnRight] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
+  const [showCloseConfirm, setShowCloseConfirm] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 
@@ -93,11 +94,16 @@ export const FileEditor: React.FC<FileEditorProps> = ({ filePath, fileName, onCl
   // Close with dirty check
   const handleClose = useCallback(() => {
     if (isDirty) {
-      const confirmed = window.confirm('You have unsaved changes. Close anyway?');
-      if (!confirmed) return;
+      setShowCloseConfirm(true);
+    } else {
+      onClose();
     }
-    onClose();
   }, [isDirty, onClose]);
+
+  const confirmClose = useCallback(() => {
+    setShowCloseConfirm(false);
+    onClose();
+  }, [onClose]);
 
   if (loading) {
     return (
@@ -212,6 +218,33 @@ export const FileEditor: React.FC<FileEditorProps> = ({ filePath, fileName, onCl
           </div>
         </div>
       </div>
+
+      {showCloseConfirm && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+        >
+          <div className="p-4 rounded-lg shadow-lg" style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-default)', maxWidth: 360 }}>
+            <div className="text-sm mb-3" style={{ color: 'var(--fg-primary)' }}>You have unsaved changes. Close anyway?</div>
+            <div className="flex justify-end gap-2">
+              <button
+                className="px-3 py-1.5 text-xs rounded-md"
+                style={{ backgroundColor: 'var(--bg-hover)', color: 'var(--fg-primary)' }}
+                onClick={() => setShowCloseConfirm(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className="px-3 py-1.5 text-xs rounded-md"
+                style={{ backgroundColor: 'var(--accent-primary)', color: '#fff' }}
+                onClick={confirmClose}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -78,10 +78,17 @@ function formatZodError(error: any): string {
 }
 
 /**
- * Listener map: tracks the mapping from user callback → wrapped handler
- * so removeListener can find and remove the correct handler.
+ * Listener maps: track the mapping from user callback → wrapped handler
+ * per channel, so removeListener and onFileChanged don't collide.
  */
-const listenerMap = new Map<(...args: any[]) => void, (_event: any, ...args: any[]) => void>();
+const listenerMap = new Map<string, Map<(...args: any[]) => void, (_event: any, ...args: any[]) => void>>();
+
+function getChannelMap(channel: string): Map<(...args: any[]) => void, (_event: any, ...args: any[]) => void> {
+  if (!listenerMap.has(channel)) {
+    listenerMap.set(channel, new Map());
+  }
+  return listenerMap.get(channel)!;
+}
 
 const api: ElectronAPI = {
   openWorkspace: (workspacePath) => {
@@ -190,16 +197,17 @@ const api: ElectronAPI = {
   on: (channel, callback) => {
     if (validChannels.includes(channel)) {
       const handler = (_event: any, ...args: any[]) => callback(...args);
-      listenerMap.set(callback, handler);
+      getChannelMap(channel).set(callback, handler);
       ipcRenderer.on(channel, handler);
     }
   },
   removeListener: (channel, callback) => {
     if (validChannels.includes(channel)) {
-      const handler = listenerMap.get(callback);
+      const channelMap = getChannelMap(channel);
+      const handler = channelMap.get(callback);
       if (handler) {
         ipcRenderer.removeListener(channel, handler);
-        listenerMap.delete(callback);
+        channelMap.delete(callback);
       }
     }
   },
@@ -212,12 +220,11 @@ const api: ElectronAPI = {
   /* File watcher */
   onFileChanged: (callback) => {
     const handler = (_event: any, data: any) => callback(data);
-    listenerMap.set(callback, handler);
+    getChannelMap('file:changed').set(callback, handler);
     ipcRenderer.on('file:changed', handler);
-    // Return unsubscribe function
     return () => {
       ipcRenderer.removeListener('file:changed', handler);
-      listenerMap.delete(callback);
+      getChannelMap('file:changed').delete(callback);
     };
   },
 

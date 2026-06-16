@@ -74,19 +74,8 @@ export async function initializeApp(
       // Running in browser (dev mode) — skip IPC steps, use localStorage fallbacks
       console.warn('[Papyrus] IPC bridge not available — running in browser mode. Some features will be unavailable.');
 
-      // Apply theme from localStorage (ThemeProvider may have already done this)
-      try {
-        const savedTheme = localStorage.getItem('papyrus_theme');
-        if (savedTheme === 'light') {
-          document.documentElement.setAttribute('data-theme', 'light');
-        } else if (savedTheme === 'system') {
-          const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-          document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
-        }
-        // Default is dark — already set in index.html
-      } catch {
-        // localStorage unavailable
-      }
+      // Theme is handled by ThemeProvider — don't set DOM attributes here to avoid
+      // racing with React's ThemeProvider hydration. localStorage is read by ThemeProvider directly.
 
       state.settingsLoaded = true;
 

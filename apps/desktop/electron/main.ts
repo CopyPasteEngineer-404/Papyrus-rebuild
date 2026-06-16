@@ -24,9 +24,24 @@ const __dirname = path.dirname(__filename);
 // --- Crash Reporter ---
 // Collects crash dumps in the user data directory for post-mortem debugging.
 // Dumps are stored under crashes/ and uploaded on next launch if a URL is configured.
+// Old crash dumps are cleaned up on each launch to prevent unbounded disk growth.
 const crashesDir = path.join(app.getPath('userData'), 'crashes');
 if (!fs.existsSync(crashesDir)) {
   fs.mkdirSync(crashesDir, { recursive: true });
+} else {
+  try {
+    const crashFiles = fs.readdirSync(crashesDir);
+    const MAX_CRASH_FILES = 20;
+    if (crashFiles.length > MAX_CRASH_FILES) {
+      const sorted = crashFiles
+        .map(f => ({ name: f, time: fs.statSync(path.join(crashesDir, f)).mtimeMs }))
+        .sort((a, b) => b.time - a.time);
+      for (let i = sorted.length - 1; i >= MAX_CRASH_FILES; i--) {
+        fs.unlinkSync(path.join(crashesDir, sorted[i].name));
+      }
+      logger.info(`Cleaned up ${crashFiles.length - MAX_CRASH_FILES} old crash dumps`);
+    }
+  } catch { /* cleanup is best-effort */ }
 }
 crashReporter.start({
   submitURL: '', // Set to a URL to auto-upload crash reports
@@ -156,14 +171,25 @@ const ALLOWED_SETTINGS_KEYS = new Set([
 ]);
 
 /** Update recent workspaces list (max 10 entries) */
+function getRecentWorkspaces(): Array<{ path: string; name: string; lastOpened: number }> {
+  return settingsStore.get('recentWorkspaces', []) as Array<{ path: string; name: string; lastOpened: number }>;
+}
+
+function setRecentWorkspaces(workspaces: Array<{ path: string; name: string; lastOpened: number }>): void {
+  settingsStore.set('recentWorkspaces', workspaces);
+}
+
 function addRecentWorkspace(workspacePath: string, workspaceName: string): void {
-  const recent: Array<{ path: string; name: string; lastOpened: number }> = settingsStore.get('recentWorkspaces', []) as any;
-  // Remove if already present
+  if (!workspacePath || typeof workspacePath !== 'string') return;
+  const recent = getRecentWorkspaces();
   const filtered = recent.filter((w) => w.path !== workspacePath);
-  // Add to front
   filtered.unshift({ path: workspacePath, name: workspaceName, lastOpened: Date.now() });
-  // Keep max 10
-  settingsStore.set('recentWorkspaces', filtered.slice(0, 10));
+  setRecentWorkspaces(filtered.slice(0, 10));
+}
+
+function removeRecentWorkspace(workspacePath: string): void {
+  const recent = getRecentWorkspaces();
+  setRecentWorkspaces(recent.filter((w) => w.path !== workspacePath));
 }
 
 // Active task abort controllers for task cancellation and graceful shutdown
@@ -392,9 +418,7 @@ ipcMain.handle('workspace:delete', async (_event, payload: { path: string }) => 
 
   // Remove from recent workspaces list
   try {
-    const recent: Array<{ path: string; name: string; lastOpened: number }> = settingsStore.get('recentWorkspaces', []) as any;
-    const filtered = recent.filter((w) => w.path !== workspacePath);
-    settingsStore.set('recentWorkspaces', filtered);
+    removeRecentWorkspace(workspacePath);
   } catch {
     // Ignore errors in removing from recent list
   }
@@ -993,8 +1017,7 @@ ipcMain.handle('export:showInFolder', async (_event, payload: { outputPath: stri
 // Recent Workspaces: Get list of last 10 workspaces
 ipcMain.handle('workspace:getRecent', async () => {
   try {
-    const recent: Array<{ path: string; name: string; lastOpened: number }> = settingsStore.get('recentWorkspaces', []) as any;
-    // Filter out workspaces that no longer exist on disk
+    const recent = getRecentWorkspaces();
     return recent.filter((w) => {
       try { return fs.existsSync(w.path); } catch { return false; }
     });
@@ -1006,9 +1029,7 @@ ipcMain.handle('workspace:getRecent', async () => {
 // Recent Workspaces: Remove a workspace from the list
 ipcMain.handle('workspace:removeRecent', async (_event, payload: { path: string }) => {
   try {
-    const recent: Array<{ path: string; name: string; lastOpened: number }> = settingsStore.get('recentWorkspaces', []) as any;
-    const filtered = recent.filter((w) => w.path !== payload.path);
-    settingsStore.set('recentWorkspaces', filtered);
+    removeRecentWorkspace(payload.path);
     return true;
   } catch {
     return false;
@@ -1725,12 +1746,11 @@ let isShuttingDown = false;
 
 app.on('before-quit', async (event) => {
   if (isShuttingDown) return;
-  // On macOS, before-quit fires before window-all-closed
   if (activeAbortControllers.size > 0 || db || fsWatchers.length > 0) {
     event.preventDefault();
     isShuttingDown = true;
     await gracefulShutdown();
-    app.quit();
+    app.exit(0);
   }
 });
 

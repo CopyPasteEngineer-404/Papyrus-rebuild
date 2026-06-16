@@ -76,27 +76,30 @@ export class ExportManager {
   }
 
   /** Generate a unique filename to avoid overwriting existing files */
-  generateFilename(baseName: string, extension: string): string {
+  async generateFilename(baseName: string, extension: string): Promise<string> {
     const sanitized = sanitizeFilename(baseName);
     let filename = `${sanitized}.${extension}`;
     let counter = 1;
 
-    // Check for existing files to avoid overwriting
-    while (fs.existsSync(path.join(this.exportDir, filename))) {
-      filename = `${sanitized}_${counter}.${extension}`;
-      counter++;
-      if (counter > 1000) {
-        filename = `${sanitized}_${Date.now()}.${extension}`;
-        break;
+    try {
+      while (await fs.promises.access(path.join(this.exportDir, filename)).then(() => true).catch(() => false)) {
+        filename = `${sanitized}_${counter}.${extension}`;
+        counter++;
+        if (counter > 1000) {
+          filename = `${sanitized}_${Date.now()}.${extension}`;
+          break;
+        }
       }
+    } catch {
+      filename = `${sanitized}_${Date.now()}.${extension}`;
     }
 
     return filename;
   }
 
   /** Generate the full output path for an export */
-  getOutputPath(baseName: string, extension: string): string {
-    const filename = this.generateFilename(baseName, extension);
+  async getOutputPath(baseName: string, extension: string): Promise<string> {
+    const filename = await this.generateFilename(baseName, extension);
     return path.join(this.exportDir, filename);
   }
 

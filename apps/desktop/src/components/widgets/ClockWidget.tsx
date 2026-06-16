@@ -61,7 +61,6 @@ interface ClockStoreState {
 const useClockStore = createClockStore();
 
 function createClockStore() {
-  // Simple state without zustand dependency (avoids extra import)
   let mode: ClockMode = 'analog';
   const listeners = new Set<() => void>();
 
@@ -75,26 +74,30 @@ function createClockStore() {
       clockMode: mode,
       setClockMode: (m: ClockMode) => {
         mode = m;
-        // Persist
         try {
           window.papyrus?.setStoredSetting('clockMode', m);
         } catch {}
-        listeners.forEach(l => l());
+        // Use a stable reference to avoid firing during unmount
+        const currentListeners = Array.from(listeners);
+        for (const l of currentListeners) {
+          try { l(); } catch { /* component may have unmounted */ }
+        }
       },
     };
   }
 
-  // Hydrate from settings
   if (typeof window !== 'undefined' && window.papyrus) {
     window.papyrus?.getStoredSetting('clockMode').then((m: string) => {
       if (m && ['analog', 'digital', 'custom'].includes(m)) {
         mode = m as ClockMode;
-        listeners.forEach(l => l());
+        const currentListeners = Array.from(listeners);
+        for (const l of currentListeners) {
+          try { l(); } catch { /* component may have unmounted */ }
+        }
       }
     }).catch(() => {});
   }
 
-  // React hook
   return function useClockStore(): ClockStoreState {
     const [, forceUpdate] = React.useReducer(x => x + 1, 0);
 
