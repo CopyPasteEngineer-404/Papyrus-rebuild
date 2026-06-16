@@ -90,6 +90,14 @@ const MIGRATIONS: Migration[] = [
       `CREATE INDEX IF NOT EXISTS idx_exports_trace_format ON exports(trace_id, format)`,
     ],
   },
+  {
+    version: 5,
+    description: 'Add unique constraint on files(workspace_id, path) to prevent duplicate rows',
+    steps: [
+      `DROP INDEX IF EXISTS idx_files_workspace_path`,
+      `CREATE UNIQUE INDEX IF NOT EXISTS idx_files_workspace_path_unique ON files(workspace_id, path)`,
+    ],
+  },
 ];
 
 /** Get the current schema version from the database */

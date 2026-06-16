@@ -26,10 +26,14 @@ export class FileRepository {
     modifiedAt?: number,
   ): void {
     const derivedName = name || filePath.split(/[\\/]/).pop() || filePath;
+    const existing = this.db.prepare(
+      'SELECT id FROM files WHERE workspace_id = ? AND path = ?'
+    ).get(workspaceId, filePath) as unknown as FileRow | undefined;
+    const id = existing?.id || generateId();
     this.db.prepare(
       `INSERT INTO files (id, workspace_id, path, name, format, hash, size, modified_at, indexed_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-       ON CONFLICT(id) DO UPDATE SET
+       ON CONFLICT(workspace_id, path) DO UPDATE SET
          name = excluded.name,
          format = excluded.format,
          hash = excluded.hash,
@@ -37,7 +41,7 @@ export class FileRepository {
          modified_at = excluded.modified_at,
          indexed_at = excluded.indexed_at`
     ).run(
-      generateId(),
+      id,
       workspaceId,
       filePath,
       derivedName,
