@@ -1,5 +1,0 @@
-This is a plain text file for testing Papyrus conversions.
-
-It has multiple lines and paragraphs.
-
-Some content here to test the conversion pipeline.

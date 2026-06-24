@@ -31,6 +31,9 @@ npm-debug.log*
 # Conversion output
 converted/
 
+# Test fixtures
+test-fixtures/
+
 # IDE
 .vscode/
 .idea/
