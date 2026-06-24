@@ -1,96 +1,128 @@
 # Papyrus
 
-**Offline-first intelligent multi-format document transformation harness**
+**Offline-first document transformation engine — convert any format to any format.**
 
-Papyrus is a desktop application for authoring, viewing, and converting documents across multiple formats. It provides a pipeline-based transformation engine, a rich workspace UI with file management, and support for Markdown, CSV, LaTeX, DOCX, Mermaid diagrams, and plain text.
-
-## Features
-
-- **Multi-format conversion** — Convert between Markdown, CSV, plain text, LaTeX, DOCX, Mermaid, HTML, and PDF with 30 supported conversion paths
-- **Pipeline export** — Transform a single source file into multiple output formats simultaneously (PDF, Markdown, HTML, TXT)
-- **Workspace management** — Open, index, and browse local directories as workspaces with file tree navigation
-- **Rich document viewer** — View Markdown (rendered), CSV (tables), LaTeX (structure/source), Mermaid (diagrams), HTML (sandboxed iframe), PDF (embedded), and plain text
-- **File editor** — Inline editing of workspace files with save support
-- **Search** — Full-text search across workspace files with filter tabs (All/Documents/Tables/Exports)
-- **Task history** — Track conversion pipeline execution with status, timing, and cancellation
-- **Export management** — Browse and open exported files with system viewer integration
-- **Theme system** — Four visual skins (Papyrus, Halftone, Isometric, Minimal Art) with light/dark/system color modes
-- **Setup wizard** — First-launch onboarding for theme, layout, and workspace configuration
-- **Keyboard shortcuts** — Quick navigation between views (`Ctrl+1`–`Ctrl+6`), layout toggle (`Ctrl+Shift+L`)
-- **Diagnostics** — Built-in smoke test to verify all subsystems
+Papyrus is a CLI-first document converter with a pipeline-based architecture. It reads 13 input formats and writes to 10 output formats — all offline, all local.
 
 ## Supported Formats
 
-| Source | Target |
-|--------|--------|
-| Markdown (`.md`, `.markdown`) | TXT, HTML, CSV, DOCX, LaTeX |
-| CSV (`.csv`) | TXT, HTML, MD, DOCX, LaTeX |
-| Plain Text (`.txt`, `.text`) | MD, HTML, CSV, DOCX, LaTeX |
-| Mermaid (`.mmd`, `.mermaid`) | TXT, MD, HTML, CSV |
-| LaTeX (`.tex`, `.latex`) | MD, HTML, TXT, DOCX, PDF |
-| DOCX (`.docx`) | TXT, MD, HTML, CSV, LaTeX, PDF |
+**Input (13):** Markdown (.md, .markdown), CSV (.csv), Plain Text (.txt, .text), Mermaid (.mmd, .mermaid), LaTeX (.tex, .latex), Word Document (.docx), Excel Spreadsheet (.xlsx), PowerPoint (.pptx), HTML (.html, .htm), JSON (.json), YAML (.yaml, .yml), Rich Text Format (.rtf), EPUB (.epub)
 
-## Architecture
+**Output (10):** PDF, Markdown, Plain Text, HTML, Word Document (DOCX), Excel Spreadsheet (XLSX), PowerPoint (PPTX), CSV, LaTeX, EPUB
 
-Papyrus is structured as an npm monorepo with these packages:
-
-| Package | Description |
-|---------|-------------|
-| `apps/desktop` | Electron desktop application (React UI + main process) |
-| `packages/shared` | Shared types, utilities, schemas, IPC protocols |
-| `packages/parsers` | Format-specific parsers (Markdown, CSV) |
-| `packages/ir` | Intermediate Representation — builder, validator, serializer |
-| `packages/workers` | Export workers, file converter, worker pool, converter thread |
-| `packages/orchestrator` | Pipeline scheduler and executor |
-| `packages/database` | SQLite database, migrations, repositories |
-| `packages/ui` | Shared UI components (Sidebar, SearchBar, FileCard, etc.) |
-
-The conversion pipeline flows as:
-
-```
-Source File → Format Parser → Intermediate Representation (IR) → Workers → Export Files
-```
-
-A direct converter path is also available for single-format "Save As" operations.
-
-## Prerequisites
-
-- Node.js >= 18
-- npm >= 9
-- For LaTeX-to-PDF: `pdflatex` on system PATH (optional — falls back to pdfkit)
+Every input converts to every output — 130 conversion paths total.
 
 ## Getting Started
 
 ```bash
-# Install dependencies
 npm install
-
-# Build all packages
-npm run build
-
-# Start development
-npm run dev
+npm run papy
 ```
 
-## Build
+Launches interactive REPL. Type `cd <path>` to pick a folder, select files by number, and convert.
+
+## Usage
+
+### Interactive REPL (default)
 
 ```bash
-# Build all packages
-npm run build
-
-# Build only packages (skip desktop electron build)
-npm run build:packages
-
-# Build only desktop
-npm run build:desktop
+npm run papy
 ```
 
-## Test
+Full state-machine REPL with file selection, multi-directory support, and format mapping:
+
+```
+papyrus> cd test-fixtures
+papyrus> 1 3 4
+papyrus> 1->pdf 3->txt 4->html
+```
+
+Commands:
+
+| Command | Description |
+|---------|-------------|
+| `cd <path>` | Change directory, then add more dirs |
+| `nshow` | Toggle auto-show after cd |
+| `nshow <path>` | Change dir without file list |
+| `show` | Show files (selected only if any) |
+| `<N> <M>` | Add files to selection |
+| `rem <N>,<M>` | Remove files from selection |
+| `N-><fmt>` | Convert file N to format |
+| `add cd` | Add another directory |
+| `dir history` | Show visited directory paths |
+| `back` | Reset selection & directories |
+| `clear` | Clear screen |
+| `help` | Show help |
+| `exit / quit` | Exit |
+
+### One-shot conversion
 
 ```bash
-npm test
-npm run test:watch
+npm run papy -- convert <file> --to <format> [--output <dir>]
+npm run papy -- convert doc.docx --to pdf
+npm run papy -- convert file.md --to pdf --to html --to txt
 ```
+
+### Batch conversion
+
+```bash
+npm run papy -- batch <dir> --to <format>
+npm run papy -- batch ./docs --to pdf --all
+```
+
+### Other commands
+
+```bash
+npm run papy -- formats        # List all formats
+npm run papy -- doctor         # System diagnostics
+npm run papy -- watch <dir>    # Watch directory for changes
+```
+
+## Architecture
+
+```
+src/
+├── cli/          # Commander CLI + interactive REPL
+├── core/         # Pipeline, parsers (13), workers (10), registry, scheduler
+├── db/           # SQLite database layer
+├── desktop/      # Desktop app (Electrobun — blocked from install)
+├── shared/       # Types, constants, schemas, utilities
+└── types/        # Format-specific type definitions
+```
+
+Pipeline flow:
+
+```
+Source File → Format Parser → Intermediate Representation → Workers → Output File
+```
+
+- **13 parsers**: md, csv, txt, mermaid, latex, docx, xlsx, pptx, html, json, yaml, rtf, epub
+- **10 workers**: pdf, md, txt, html, docx, xlsx, pptx, csv, latex, epub
+
+## Tech Stack
+
+- **Runtime**: Node.js ≥ 18, TypeScript
+- **CLI**: Commander, Chalk, tsx (runner)
+- **Pipeline**: Custom pipeline with registry, scheduler, worker pool
+- **Database**: SQLite (better-sqlite3)
+- **Conversion**: pdf-lib, docx, mammoth, xlsx, pptxgenjs, epub-gen, cheerio, rtf-parser, yaml
+
+No heavy frameworks, no monorepo overhead. Flat `src/` structure, zero runtime dependencies beyond what's listed.
+
+## Scripts
+
+| Script | Command |
+|--------|---------|
+| `npm run papy` | Launch interactive REPL |
+| `npm run papyrus` | Same as above |
+| `npm run cli` | Same as above |
+| `npm test` | Run tests |
+| `npm run typecheck` | TypeScript type check |
+| `npm run lint` | ESLint |
+
+## Desktop App
+
+A desktop build exists at `src/desktop/` (Electrobun + React + Vite + Tailwind) but is blocked — `electrobun` cannot be installed via npm on this environment (`Invalid Version` crash). CLI is the primary delivery vehicle.
 
 ## License
 

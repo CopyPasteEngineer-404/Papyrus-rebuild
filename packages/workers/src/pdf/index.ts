@@ -1,1 +1,0 @@
-export { PDFWorker } from './worker';
