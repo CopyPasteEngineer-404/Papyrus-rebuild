@@ -1,3 +1,5 @@
+<img src="papyrus-banner.svg" alt="Papyrus — Offline-first document transformation engine">
+
 # Papyrus
 
 **Offline-first document transformation engine — convert any format to any format.**

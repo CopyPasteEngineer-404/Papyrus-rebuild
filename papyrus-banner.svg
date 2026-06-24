@@ -1,0 +1,113 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 200" width="100%" style="max-width:900px;background:#1a1a2e;border-radius:12px;font-family:Georgia,'Times New Roman',serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1a1a2e"/>
+      <stop offset="60%" stop-color="#16213e"/>
+      <stop offset="100%" stop-color="#0f3460"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#c8a45c"/>
+      <stop offset="50%" stop-color="#e8c87a"/>
+      <stop offset="100%" stop-color="#c8a45c"/>
+    </linearGradient>
+    <linearGradient id="scroll" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#efe6d5"/>
+      <stop offset="50%" stop-color="#f5efe3"/>
+      <stop offset="100%" stop-color="#e0d5c0"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="900" height="200" rx="12" fill="url(#bg)"/>
+
+  <!-- Papyrus Reed -->
+  <g>
+    <animateTransform attributeName="transform" type="rotate" values="0,60,100;2,60,100;0,60,100;-2,60,100;0,60,100" dur="5s" repeatCount="indefinite"/>
+    <line x1="60" y1="180" x2="55" y2="30" stroke="#c8a45c" stroke-width="3" stroke-linecap="round" opacity="0.7"/>
+    <line x1="60" y1="180" x2="70" y2="25" stroke="#d4b96a" stroke-width="2.5" stroke-linecap="round" opacity="0.6"/>
+    <line x1="60" y1="180" x2="48" y2="40" stroke="#b89848" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+    <ellipse cx="55" cy="28" rx="8" ry="4" fill="#c8a45c" opacity="0.5"/>
+    <ellipse cx="70" cy="23" rx="7" ry="3.5" fill="#d4b96a" opacity="0.4"/>
+    <ellipse cx="48" cy="38" rx="6" ry="3" fill="#b89848" opacity="0.4"/>
+    <path d="M55,120 Q40,110 35,100 Q45,105 55,115" fill="#c8a45c" opacity="0.3"/>
+    <path d="M65,90 Q80,80 85,70 Q75,78 65,85" fill="#d4b96a" opacity="0.3"/>
+    <path d="M50,60 Q35,50 32,40 Q42,48 50,55" fill="#b89848" opacity="0.25"/>
+  </g>
+
+  <!-- Document 1: .md -->
+  <g>
+    <animateTransform attributeName="transform" type="translate" values="0,0;0,-5;0,0;0,5;0,0" dur="4s" repeatCount="indefinite"/>
+    <rect x="180" y="70" width="50" height="60" rx="4" fill="url(#scroll)" opacity="0.9"/>
+    <line x1="190" y1="85" x2="220" y2="85" stroke="#1a1a2e" stroke-width="1.5" opacity="0.4"/>
+    <line x1="190" y1="93" x2="215" y2="93" stroke="#1a1a2e" stroke-width="1.5" opacity="0.3"/>
+    <line x1="190" y1="101" x2="210" y2="101" stroke="#1a1a2e" stroke-width="1.5" opacity="0.2"/>
+    <text x="205" y="118" text-anchor="middle" fill="#1a1a2e" font-size="10" font-family="monospace" opacity="0.6">.md</text>
+  </g>
+
+  <!-- Arrow 1 -->
+  <g>
+    <animate attributeName="opacity" values="0.5;1;0.5" dur="2s" repeatCount="indefinite"/>
+    <line x1="240" y1="100" x2="280" y2="100" stroke="#c8a45c" stroke-width="2" stroke-linecap="round"/>
+    <polygon points="280,95 290,100 280,105" fill="#c8a45c"/>
+  </g>
+
+  <!-- Document 2: IR -->
+  <g>
+    <animateTransform attributeName="transform" type="translate" values="0,0;0,-5;0,0;0,5;0,0" dur="4s" begin="0.8s" repeatCount="indefinite"/>
+    <rect x="300" y="65" width="50" height="60" rx="4" fill="url(#scroll)" opacity="0.95"/>
+    <line x1="310" y1="80" x2="340" y2="80" stroke="#1a1a2e" stroke-width="1.5" opacity="0.4"/>
+    <line x1="310" y1="88" x2="335" y2="88" stroke="#1a1a2e" stroke-width="1.5" opacity="0.3"/>
+    <line x1="310" y1="96" x2="330" y2="96" stroke="#1a1a2e" stroke-width="1.5" opacity="0.2"/>
+    <text x="325" y="113" text-anchor="middle" fill="#1a1a2e" font-size="10" font-family="monospace" opacity="0.6">IR</text>
+  </g>
+
+  <!-- Arrow 2 -->
+  <g>
+    <animate attributeName="opacity" values="0.5;1;0.5" dur="2s" begin="0.6s" repeatCount="indefinite"/>
+    <line x1="360" y1="95" x2="400" y2="95" stroke="#c8a45c" stroke-width="2" stroke-linecap="round"/>
+    <polygon points="400,90 410,95 400,100" fill="#c8a45c"/>
+  </g>
+
+  <!-- Document 3: .pdf -->
+  <g>
+    <animateTransform attributeName="transform" type="translate" values="0,0;0,-5;0,0;0,5;0,0" dur="4s" begin="1.6s" repeatCount="indefinite"/>
+    <rect x="420" y="70" width="50" height="60" rx="4" fill="url(#scroll)" opacity="0.9"/>
+    <line x1="430" y1="85" x2="460" y2="85" stroke="#1a1a2e" stroke-width="1.5" opacity="0.4"/>
+    <line x1="430" y1="93" x2="455" y2="93" stroke="#1a1a2e" stroke-width="1.5" opacity="0.3"/>
+    <line x1="430" y1="101" x2="450" y2="101" stroke="#1a1a2e" stroke-width="1.5" opacity="0.2"/>
+    <text x="445" y="118" text-anchor="middle" fill="#1a1a2e" font-size="10" font-family="monospace" opacity="0.6">.pdf</text>
+  </g>
+
+  <!-- Output glow rings -->
+  <circle cx="520" cy="100" r="18" fill="none" stroke="#e8c87a" stroke-width="1.5" opacity="0.3">
+    <animate attributeName="opacity" values="0.2;0.5;0.2" dur="2.5s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="520" cy="100" r="25" fill="none" stroke="#c8a45c" stroke-width="1" opacity="0.15">
+    <animate attributeName="opacity" values="0.1;0.3;0.1" dur="2.5s" begin="0.5s" repeatCount="indefinite"/>
+  </circle>
+
+  <!-- Vertical divider -->
+  <line x1="560" y1="30" x2="560" y2="170" stroke="#c8a45c" stroke-width="1" opacity="0.3"/>
+
+  <!-- Title -->
+  <text x="730" y="80" text-anchor="middle" font-size="44" font-weight="bold" fill="url(#gold)" font-family="Georgia,'Times New Roman',serif" filter="url(#glow)">
+    PAPYRUS
+    <animate attributeName="filter" values="url(#glow);" dur="3s" repeatCount="indefinite"/>
+  </text>
+  <text x="730" y="105" text-anchor="middle" font-size="11" fill="#c8a45c" opacity="0.7" font-family="Georgia,serif" letter-spacing="6">DOCUMENT ENGINE</text>
+
+  <!-- Tagline -->
+  <text x="730" y="145" text-anchor="middle" font-size="12" fill="#a0a0b8" font-family="'Segoe UI',Arial,sans-serif" letter-spacing="1">
+    Offline-first document transformation
+    <animate attributeName="opacity" values="0.6;1;0.6" dur="4s" repeatCount="indefinite"/>
+  </text>
+
+  <!-- Decorative dots -->
+  <circle cx="160" cy="180" r="1.5" fill="#c8a45c" opacity="0.2"/>
+  <circle cx="200" cy="185" r="1" fill="#c8a45c" opacity="0.15"/>
+  <circle cx="250" cy="178" r="1.5" fill="#c8a45c" opacity="0.2"/>
+  <circle cx="310" cy="182" r="1" fill="#c8a45c" opacity="0.15"/>
+  <circle cx="370" cy="179" r="1.5" fill="#c8a45c" opacity="0.2"/>
+</svg>
