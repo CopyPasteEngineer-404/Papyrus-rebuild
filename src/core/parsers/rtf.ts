@@ -1,10 +1,18 @@
-import rtfParser from 'rtf-parser';
 import type { RTFDocument, RTFSpan } from 'rtf-parser';
 import { ParseInput, IRDocument } from '../../shared/types';
 import { IRBuilder } from '../ir/builder';
 import type { Parser } from '../registry';
 
-function parseRtf(content: string): Promise<RTFDocument> {
+let rtfModule: any = null;
+async function loadRtfParser() {
+  if (!rtfModule) {
+    rtfModule = (await import('rtf-parser')).default;
+  }
+  return rtfModule;
+}
+
+async function parseRtf(content: string): Promise<RTFDocument> {
+  const rtfParser = await loadRtfParser();
   return new Promise((resolve, reject) => {
     const readable = rtfParser.parse(content);
     const chunks: RTFDocument[] = [];
@@ -53,7 +61,9 @@ export const rtfParserImpl: Parser = {
   },
 
   async parse(input: ParseInput): Promise<IRDocument> {
-    const doc = await parseRtf(input.content);
+    const doc = await parseRtf(input.content).catch((e: Error) => {
+      throw new Error(`Failed to parse RTF: ${e.message}`);
+    });
     const builder = new IRBuilder().setSourceFile(input.filePath);
 
     const docTitle =

@@ -1,20 +1,20 @@
-import { Database } from 'bun:sqlite';
+import Database from 'better-sqlite3';
 import { generateId } from '../../shared/utils';
 import type { Workspace } from '../../shared/types';
 
 export class WorkspaceRepository {
-  private db: Database;
-  private stmtCreate: ReturnType<Database['prepare']>;
-  private stmtFindByPath: ReturnType<Database['prepare']>;
-  private stmtGetAll: ReturnType<Database['prepare']>;
-  private stmtUpdateLastOpened: ReturnType<Database['prepare']>;
-  private stmtDeleteById: ReturnType<Database['prepare']>;
-  private stmtDeleteFilesByWorkspace: ReturnType<Database['prepare']>;
-  private stmtDeleteTasksByWorkspace: ReturnType<Database['prepare']>;
-  private stmtDeleteExportsByTask: ReturnType<Database['prepare']>;
-  private stmtGetTaskIds: ReturnType<Database['prepare']>;
+  private db: Database.Database;
+  private stmtCreate: Database.Statement;
+  private stmtFindByPath: Database.Statement;
+  private stmtGetAll: Database.Statement;
+  private stmtUpdateLastOpened: Database.Statement;
+  private stmtDeleteById: Database.Statement;
+  private stmtDeleteFilesByWorkspace: Database.Statement;
+  private stmtDeleteTasksByWorkspace: Database.Statement;
+  private stmtDeleteExportsByTask: Database.Statement;
+  private stmtGetTaskIds: Database.Statement;
 
-  constructor(db: Database) {
+  constructor(db: Database.Database) {
     this.db = db;
 
     this.stmtCreate = db.prepare(

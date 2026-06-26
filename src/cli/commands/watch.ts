@@ -144,8 +144,7 @@ export function registerWatchCommand(program: Command): void {
           if (!format) return;
 
           // Ignore output directory
-          const relativePath = path.relative(outputDir, fullPath);
-          if (!relativePath.startsWith('..')) return;
+          if (fullPath.startsWith(outputDir + path.sep)) return;
 
           scheduleConversion(fullPath);
         });

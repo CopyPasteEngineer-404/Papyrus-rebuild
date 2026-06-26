@@ -1,17 +1,17 @@
-import { Database } from 'bun:sqlite';
+import Database from 'better-sqlite3';
 import { generateId } from '../../shared/utils';
 import type { TransformationTask, TaskStatus, OutputFormat, ConstraintSet, WorkerResult } from '../../shared/types';
 
 export class TaskRepository {
-  private db: Database;
-  private stmtCreate: ReturnType<Database['prepare']>;
-  private stmtFindById: ReturnType<Database['prepare']>;
-  private stmtFindByWorkspace: ReturnType<Database['prepare']>;
-  private stmtUpdateStatus: ReturnType<Database['prepare']>;
-  private stmtUpdateError: ReturnType<Database['prepare']>;
-  private stmtComplete: ReturnType<Database['prepare']>;
+  private db: Database.Database;
+  private stmtCreate: Database.Statement;
+  private stmtFindById: Database.Statement;
+  private stmtFindByWorkspace: Database.Statement;
+  private stmtUpdateStatus: Database.Statement;
+  private stmtUpdateError: Database.Statement;
+  private stmtComplete: Database.Statement;
 
-  constructor(db: Database) {
+  constructor(db: Database.Database) {
     this.db = db;
 
     this.stmtCreate = db.prepare(

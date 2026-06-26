@@ -2,7 +2,14 @@ import { ParseInput, IRDocument, IRBlockNode } from '../../shared/types';
 import { IRBuilder } from '../ir/builder';
 import { generateId } from '../../shared/utils';
 import type { Parser } from '../registry';
-import mammoth from 'mammoth';
+
+let mammothModule: any = null;
+async function loadMammoth() {
+  if (!mammothModule) {
+    mammothModule = (await import('mammoth')).default;
+  }
+  return mammothModule;
+}
 
 export const docxParser: Parser = {
   id: 'docx',
@@ -21,10 +28,20 @@ export const docxParser: Parser = {
   },
 
   async parse(input: ParseInput): Promise<IRDocument> {
+    if (!input.content || input.content.length === 0) {
+      return new IRBuilder().setSourceFile(input.filePath).setTitle('Empty DOCX').build();
+    }
+
     const buffer = Buffer.from(input.content, 'binary');
 
-    const result = await mammoth.convertToHtml({ buffer });
-    const html = result.value;
+    let html: string;
+    try {
+      const mammoth = await loadMammoth();
+      const result = await mammoth.convertToHtml({ buffer });
+      html = result.value;
+    } catch (err) {
+      throw new Error(`DOCX parsing failed: ${err instanceof Error ? err.message : String(err)}`);
+    }
 
     const builder = new IRBuilder();
     builder.setSourceFile(input.filePath);
@@ -46,9 +63,11 @@ function htmlToIR(html: string, builder: IRBuilder): void {
   processNode(doc, builder);
 }
 
-function parseHTML(html: string): HTMLElement {
-  if (typeof globalThis.document !== 'undefined' && globalThis.document.createElement) {
-    const div = globalThis.document.createElement('div');
+function parseHTML(html: string): unknown {
+  const g = globalThis as Record<string, unknown>;
+  if (typeof g['document'] !== 'undefined') {
+    const doc = g['document'] as { createElement: (tag: string) => { innerHTML: string } };
+    const div = doc.createElement('div');
     div.innerHTML = html;
     return div;
   }
@@ -109,7 +128,7 @@ function parseHTML(html: string): HTMLElement {
     }
   }
 
-  return wrapper as unknown as HTMLElement;
+  return wrapper as unknown;
 }
 
 function processNode(node: unknown, builder: IRBuilder): void {

@@ -41,6 +41,21 @@ function visibleLen(s: string): number {
   return stripAnsi(s).length;
 }
 
+function fileKey(dirIdx: number, fileNum: number): string {
+  return dirIdx + '-' + fileNum;
+}
+
+function getSelectedNumbersForDir(selected: Set<string>, dirIdx: number): number[] {
+  const prefix = dirIdx + '-';
+  const nums: number[] = [];
+  for (const key of selected) {
+    if (key.startsWith(prefix)) {
+      nums.push(Number(key.slice(prefix.length)));
+    }
+  }
+  return nums;
+}
+
 async function listFiles(dir: string): Promise<FileInfo[]> {
   try {
     const entries = await fs.readdir(dir, { withFileTypes: true });
@@ -159,7 +174,7 @@ function printFiles(files: FileInfo[], termW: number, highlightIndices: number[]
   if (files.length === 0) { console.log(chalk.yellow('  No files.\n')); return; }
 
   const wNum = 3, wNameRatio = 0.30, wType = 8, wSize = 10;
-  const gapHN = 3, gapNT = 1, gapTS = 3, gapSC = 7;
+  const gapHN = 3, gapNT = 3, gapTS = 3, gapSC = 7;
   const overhead = 2 + wNum + gapHN + gapNT + wType + gapTS + wSize + gapSC;
   const maxNameW = Math.max(10, Math.min(40, Math.floor(termW * wNameRatio)));
   const maxFmtW = Math.max(10, termW - overhead - maxNameW);
@@ -268,15 +283,15 @@ function showDirChange(dir: string): void {
   console.log(chalk.green(`  ✓ ${chalk.bold(folderName)} (${dir})`));
 }
 
-function showDirs(dirs: DirEntry[], termW: number, selected: Set<number>): void {
+function showDirs(dirs: DirEntry[], termW: number, selected: Set<string>): void {
   for (let i = 0; i < dirs.length; i++) {
     const d = dirs[i];
     const header = `  ${chalk.cyan(`Directory ${i + 1}: ${d.path}`)}`;
     console.log(header);
     if (selected.size > 0) {
-      const filtered = d.files.filter(f => selected.has(f.index));
+      const filtered = d.files.filter(f => selected.has(fileKey(i, f.index)));
       if (filtered.length > 0) {
-        printFiles(filtered, termW, [...selected]);
+        printFiles(filtered, termW, getSelectedNumbersForDir(selected, i));
       }
     } else {
       printFiles(d.files, termW, []);
@@ -299,7 +314,7 @@ export async function startInteractive(): Promise<void> {
   const termW = process.stdout.columns || 80;
   let dirs: DirEntry[] = [];
   let activeDirIdx = 0;
-  let selected = new Set<number>();
+  let selected = new Set<string>();
   let dirHistory: string[] = [process.cwd()];
   let autoShow = true;
 
@@ -317,15 +332,6 @@ export async function startInteractive(): Promise<void> {
       const stat = await fs.stat(resolved);
       if (!stat.isDirectory()) { console.log(chalk.red('  Not a directory.\n')); return false; }
       dirs.push({ path: resolved, files: [] });
-      return true;
-    } catch { console.log(chalk.red('  Not found.\n')); return false; }
-  }
-
-  async function addDirAbsolute(target: string): Promise<boolean> {
-    try {
-      const stat = await fs.stat(target);
-      if (!stat.isDirectory()) { console.log(chalk.red('  Not a directory.\n')); return false; }
-      dirs.push({ path: target, files: [] });
       return true;
     } catch { console.log(chalk.red('  Not found.\n')); return false; }
   }
@@ -350,10 +356,15 @@ export async function startInteractive(): Promise<void> {
     console.log(chalk.gray('  Type "exit" to quit.\n'));
   });
 
-  async function multiDirPrompt(): Promise<void> {
+  async function multiDirPrompt(): Promise<boolean> {
     while (true) {
       const answer = await ask(rl, chalk.gray('  • '));
-      if (!answer || answer === 'exit') break;
+      if (!answer) continue;
+      if (answer === 'exit' || answer === 'quit') {
+        console.log('');
+        rl.close();
+        process.exit(0);
+      }
       if (answer.startsWith('cd ')) {
         const target = answer.slice(3).trim();
         if (await addDir(target)) {
@@ -371,6 +382,7 @@ export async function startInteractive(): Promise<void> {
       console.log(chalk.bold('  Selected directories:\n'));
       showDirs(dirs, termW, selected);
     }
+    return false;
   }
 
   while (true) {
@@ -417,7 +429,7 @@ export async function startInteractive(): Promise<void> {
             showDirChange(dirs[idx].path);
             selected.clear();
             activeDirIdx = idx;
-            await multiDirPrompt();
+            if (await multiDirPrompt()) { rl.close(); process.exit(0); }
           }
         } else {
           if (await addDir(target)) {
@@ -425,9 +437,8 @@ export async function startInteractive(): Promise<void> {
             await refreshDirFiles(idx);
             dirHistory.push(dirs[idx].path);
             showDirChange(dirs[idx].path);
-            selected.clear();
             activeDirIdx = idx;
-            await multiDirPrompt();
+            if (await multiDirPrompt()) { rl.close(); process.exit(0); }
           }
         }
       }
@@ -462,12 +473,12 @@ export async function startInteractive(): Promise<void> {
       if (dirs.length === 0) {
         console.log(chalk.yellow('  No directories yet. Use cd <path> first.\n'));
       } else {
-        await multiDirPrompt();
+        if (await multiDirPrompt()) { rl.close(); process.exit(0); }
       }
       continue;
     }
 
-    if (line === 'show' || line === 'list') {
+    if (input === 'show' || input === 'list') {
       if (dirs.length === 0) {
         console.log(chalk.yellow('  No directories. Use cd <path>.\n'));
         continue;
@@ -478,10 +489,10 @@ export async function startInteractive(): Promise<void> {
       if (selected.size > 0) {
         console.log(chalk.bold('  Selected files:\n'));
         for (let i = 0; i < dirs.length; i++) {
-          const filtered = dirs[i].files.filter(f => selected.has(f.index));
+          const filtered = dirs[i].files.filter(f => selected.has(fileKey(i, f.index)));
           if (filtered.length > 0) {
             console.log(`  ${chalk.cyan(`Directory ${i + 1}: ${dirs[i].path}`)}`);
-            printFiles(filtered, termW, [...selected]);
+            printFiles(filtered, termW, getSelectedNumbersForDir(selected, i));
           }
         }
       } else {
@@ -503,7 +514,7 @@ export async function startInteractive(): Promise<void> {
           }
           selected.clear();
           activeDirIdx = idx;
-          await multiDirPrompt();
+          if (await multiDirPrompt()) { rl.close(); process.exit(0); }
         }
       } else {
         if (await addDir(target)) {
@@ -514,9 +525,8 @@ export async function startInteractive(): Promise<void> {
           if (autoShow) {
             printFiles(dirs[idx].files, termW);
           }
-          selected.clear();
           activeDirIdx = idx;
-          await multiDirPrompt();
+          if (await multiDirPrompt()) { rl.close(); process.exit(0); }
         }
       }
       continue;
@@ -531,15 +541,15 @@ export async function startInteractive(): Promise<void> {
       }
       let removed = 0;
       for (const n of nums) {
-        if (selected.delete(n)) removed++;
+        if (selected.delete(fileKey(activeDirIdx, n))) removed++;
       }
       const remaining = selected.size;
       if (removed > 0) {
         console.log(chalk.gray(`  Removed ${removed} file(s). ${remaining > 0 ? `${remaining} file(s) remaining.` : 'Selection empty — use numbers to add.'}\n`));
         if (remaining > 0) {
           const allFiles = getActiveFiles();
-          const filtered = allFiles.filter(f => selected.has(f.index));
-          printFiles(filtered, termW, [...selected]);
+          const filtered = allFiles.filter(f => selected.has(fileKey(activeDirIdx, f.index)));
+          printFiles(filtered, termW, getSelectedNumbersForDir(selected, activeDirIdx));
         }
       } else {
         console.log(chalk.yellow('  No matching files in selection.\n'));
@@ -575,14 +585,14 @@ export async function startInteractive(): Promise<void> {
       }
 
       let ok = true;
-      for (let di = 0; di < dirs.length; di++) {
-        const dirFiles = dirs[di].files;
+      if (dirs.length > 0) {
+        const dirFiles = dirs[activeDirIdx].files;
         const dirValid = valid.filter(m => {
           const f = dirFiles.find(x => x.index === m.fileIndex);
           return f && f.formats.includes(m.format);
         });
         if (dirValid.length > 0) {
-          const r = await doConvert(dirValid, dirFiles, dirs[di].path);
+          const r = await doConvert(dirValid, dirFiles, dirs[activeDirIdx].path);
           if (!r) ok = false;
         }
       }
@@ -604,26 +614,26 @@ export async function startInteractive(): Promise<void> {
 
       const allSelected = selected.size === allFiles.length;
       if (allSelected) {
-        const alreadySelected = validNums.every(n => selected.has(n));
+        const alreadySelected = validNums.every(n => selected.has(fileKey(activeDirIdx, n)));
         if (alreadySelected) {
           console.log(chalk.gray('  All files already selected. Use rem to deselect.\n'));
         } else {
-          const newNums = validNums.filter(n => !selected.has(n));
+          const newNums = validNums.filter(n => !selected.has(fileKey(activeDirIdx, n)));
           if (newNums.length > 0) {
-            for (const n of newNums) selected.add(n);
-            const filtered = allFiles.filter(f => selected.has(f.index));
-            printFiles(filtered, termW, [...selected]);
+            for (const n of newNums) selected.add(fileKey(activeDirIdx, n));
+            const filtered = allFiles.filter(f => selected.has(fileKey(activeDirIdx, f.index)));
+            printFiles(filtered, termW, getSelectedNumbersForDir(selected, activeDirIdx));
             console.log(chalk.gray('  All files selected. Use rem to deselect.\n'));
           }
         }
       } else {
         const before = selected.size;
-        for (const n of validNums) selected.add(n);
+        for (const n of validNums) selected.add(fileKey(activeDirIdx, n));
         const added = selected.size - before;
         console.log(chalk.gray(`  Added ${added} file(s). Total selected: ${selected.size}\n`));
 
-        const filtered = allFiles.filter(f => selected.has(f.index));
-        printFiles(filtered, termW, [...selected]);
+        const filtered = allFiles.filter(f => selected.has(fileKey(activeDirIdx, f.index)));
+        printFiles(filtered, termW, getSelectedNumbersForDir(selected, activeDirIdx));
       }
 
       if (selected.size === 0) continue;
@@ -635,13 +645,13 @@ export async function startInteractive(): Promise<void> {
         const numsStr = sub.slice(4).trim();
         const rNums = numsStr.split(/[\s,]+/).map(s => Number(s.trim())).filter(n => !isNaN(n));
         let r = 0;
-        for (const n of rNums) { if (selected.delete(n)) r++; }
+        for (const n of rNums) { if (selected.delete(fileKey(activeDirIdx, n))) r++; }
         if (selected.size === 0) {
           console.log(chalk.gray(`  Removed ${r} file(s). Selection empty — use numbers to add.\n`));
         } else {
           console.log(chalk.gray(`  Removed ${r} file(s). ${selected.size} remaining.\n`));
-          const remaining = allFiles.filter(f => selected.has(f.index));
-          printFiles(remaining, termW, [...selected]);
+          const remaining = allFiles.filter(f => selected.has(fileKey(activeDirIdx, f.index)));
+          printFiles(remaining, termW, getSelectedNumbersForDir(selected, activeDirIdx));
         }
         continue;
       }
@@ -651,14 +661,14 @@ export async function startInteractive(): Promise<void> {
         const validMore = more.filter(n => allFiles.some(f => f.index === n));
         const allNow = selected.size + validMore.length;
         if (allNow >= allFiles.length) {
-          for (const n of validMore) selected.add(n);
+          for (const n of validMore) selected.add(fileKey(activeDirIdx, n));
           console.log(chalk.gray(`  Added ${validMore.length} more. All files now selected.\n`));
         } else {
-          for (const n of validMore) selected.add(n);
+          for (const n of validMore) selected.add(fileKey(activeDirIdx, n));
           console.log(chalk.gray(`  Added ${validMore.length} more. Total: ${selected.size}\n`));
         }
-        const updated = allFiles.filter(f => selected.has(f.index));
-        printFiles(updated, termW, [...selected]);
+        const updated = allFiles.filter(f => selected.has(fileKey(activeDirIdx, f.index)));
+        printFiles(updated, termW, getSelectedNumbersForDir(selected, activeDirIdx));
         continue;
       }
 
@@ -685,14 +695,14 @@ export async function startInteractive(): Promise<void> {
           }
 
           let ok = true;
-          for (let di = 0; di < dirs.length; di++) {
-            const dirFiles = dirs[di].files;
+          if (dirs.length > 0) {
+            const dirFiles = dirs[activeDirIdx].files;
             const dirValid = valid.filter(x => {
               const f = dirFiles.find(ff => ff.index === x.fileIndex);
               return f && f.formats.includes(x.format);
             });
             if (dirValid.length > 0) {
-              const r = await doConvert(dirValid, dirFiles, dirs[di].path);
+              const r = await doConvert(dirValid, dirFiles, dirs[activeDirIdx].path);
               if (!r) ok = false;
             }
           }

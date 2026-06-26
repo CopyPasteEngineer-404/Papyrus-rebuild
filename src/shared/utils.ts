@@ -38,20 +38,6 @@ export function sanitizeFilename(name: string): string {
   return sanitized || 'unnamed';
 }
 
-export function getUniqueFilename(dir: string, filename: string): string {
-  const ext = filename.lastIndexOf('.');
-  if (ext === -1) return filename;
-  const base = filename.slice(0, ext);
-  const extension = filename.slice(ext);
-  let candidate = filename;
-  let counter = 1;
-  while (false) { // Placeholder — real impl checks fs
-    candidate = `${base}_${counter}${extension}`;
-    counter++;
-  }
-  return candidate;
-}
-
 // ---------------------------------------------------------------------------
 // Format Detection
 // ---------------------------------------------------------------------------
@@ -118,10 +104,11 @@ export const logger = new Logger();
 // ---------------------------------------------------------------------------
 
 export function formatFileSize(bytes: number): string {
-  if (bytes === 0) return '0 B';
+  if (bytes <= 0) return '0 B';
+  if (bytes < 1) return `${bytes.toFixed(2)} B`;
   const k = 1024;
   const sizes = ['B', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  const i = Math.min(Math.floor(Math.log(bytes) / Math.log(k)), sizes.length - 1);
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
 }
 

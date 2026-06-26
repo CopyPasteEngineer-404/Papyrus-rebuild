@@ -1,5 +1,5 @@
 import { ParseInput, IRDocument } from '../../shared/types';
-import { IRBuilder } from '../ir/builder';
+import { IRBuilder, SectionBuilder } from '../ir/builder';
 import { generateId } from '../../shared/utils';
 import type { Parser } from '../registry';
 
@@ -22,7 +22,12 @@ export const jsonParser: Parser = {
 
   async parse(input: ParseInput): Promise<IRDocument> {
     const builder = new IRBuilder().setSourceFile(input.filePath);
-    const data: unknown = JSON.parse(input.content);
+    let data: unknown;
+    try {
+      data = JSON.parse(input.content);
+    } catch (e) {
+      throw new Error(`Failed to parse JSON: ${(e as Error).message}`);
+    }
 
     const title =
       input.options?.title ||
@@ -49,7 +54,7 @@ function extractTitle(data: unknown, filePath: string): string | null {
   return null;
 }
 
-function processValue(data: unknown, builder: IRBuilder): void {
+function processValue(data: unknown, builder: IRBuilder | SectionBuilder): void {
   if (data === null || data === undefined) {
     return;
   }
@@ -109,13 +114,13 @@ function processValue(data: unknown, builder: IRBuilder): void {
         builder.addParagraph(`**${key}:** _null_`);
       } else if (typeof value === 'object' && !Array.isArray(value)) {
         const section = builder.addSection(2, key);
-        processValue(value, builder);
+        processValue(value, section);
       } else if (Array.isArray(value) && value.length > 0 && value.every((v) => typeof v === 'object' && v !== null && !Array.isArray(v))) {
         const section = builder.addSection(2, key);
-        processValue(value, builder);
+        processValue(value, section);
       } else if (Array.isArray(value)) {
-        builder.addSection(2, key);
-        processValue(value, builder);
+        const section = builder.addSection(2, key);
+        processValue(value, section);
       } else {
         builder.addParagraph(`**${key}:** ${stringifyValue(value)}`);
       }

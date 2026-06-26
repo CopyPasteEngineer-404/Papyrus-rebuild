@@ -1,10 +1,10 @@
-import { Database } from 'bun:sqlite';
+import Database from 'better-sqlite3';
 import { logger } from '../shared/utils';
 
 type Migration = {
   version: number;
   name: string;
-  up: (db: Database) => void;
+  up: (db: Database.Database) => void;
 };
 
 const migrations: Migration[] = [
@@ -39,8 +39,10 @@ const migrations: Migration[] = [
           workspace_id TEXT REFERENCES workspaces(id) ON DELETE CASCADE,
           source_files TEXT NOT NULL,
           output_format TEXT NOT NULL,
+          constraints TEXT,
           status TEXT DEFAULT 'pending',
           progress REAL DEFAULT 0,
+          results TEXT DEFAULT '[]',
           error TEXT,
           created_at TEXT DEFAULT (datetime('now')),
           completed_at TEXT
@@ -123,18 +125,18 @@ const migrations: Migration[] = [
   },
 ];
 
-function getCurrentVersion(db: Database): number {
+function getCurrentVersion(db: Database.Database): number {
   try {
-    const result = db.query<{ version: number }>(
+    const row = db.prepare(
       "SELECT version FROM schema_migrations ORDER BY version DESC LIMIT 1"
-    ).get();
-    return result?.version ?? 0;
+    ).get() as { version: number } | undefined;
+    return row?.version ?? 0;
   } catch {
     return 0;
   }
 }
 
-export function runMigrations(db: Database): void {
+export function runMigrations(db: Database.Database): void {
   db.exec('PRAGMA foreign_keys = ON');
 
   const currentVersion = getCurrentVersion(db);
@@ -146,7 +148,7 @@ export function runMigrations(db: Database): void {
 
       const apply = db.transaction(() => {
         migration.up(db);
-        db.query(
+        db.prepare(
           "INSERT INTO schema_migrations (version, name) VALUES (?, ?)"
         ).run(migration.version, migration.name);
       });

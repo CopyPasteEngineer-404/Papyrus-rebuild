@@ -1,14 +1,14 @@
-import { Database } from 'bun:sqlite';
+import Database from 'better-sqlite3';
 import { generateId } from '../../shared/utils';
 import type { ExportRecord, OutputFormat } from '../../shared/types';
 
 export class ExportRepository {
-  private db: Database;
-  private stmtCreate: ReturnType<Database['prepare']>;
-  private stmtGetRecent: ReturnType<Database['prepare']>;
-  private stmtDeleteByTaskId: ReturnType<Database['prepare']>;
+  private db: Database.Database;
+  private stmtCreate: Database.Statement;
+  private stmtGetRecent: Database.Statement;
+  private stmtDeleteByTaskId: Database.Statement;
 
-  constructor(db: Database) {
+  constructor(db: Database.Database) {
     this.db = db;
 
     this.stmtCreate = db.prepare(

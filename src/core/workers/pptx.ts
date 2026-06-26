@@ -1,7 +1,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import PptxGenJS from 'pptxgenjs';
-import { WorkerInput, WorkerResult, GeneratedArtifact, IRBlockNode } from '../../shared/types';
+import { WorkerInput, WorkerResult, GeneratedArtifact, IRBlockNode, IRInlineNode, flattenInline } from '../../shared/types';
 import { sanitizeFilename } from '../../shared/utils';
 import { walkIR, findNodesByType } from '../ir/traversal';
 import { BaseWorker } from './base';
@@ -284,36 +284,48 @@ export class PPTXWorker extends BaseWorker {
     y: number
   ): { text: string; options: any; height: number } | null {
     switch (node.type) {
-      case 'paragraph':
+      case 'paragraph': {
+        const pText = node.inline?.length ? flattenInline(node.inline) : node.content;
         return {
-          text: node.content,
+          text: pText,
           options: { x, y, w: 9, h: 0.5, fontSize: 14 },
           height: 0.6,
         };
-      case 'list':
+      }
+      case 'list': {
+        const lText = node.items.map((item) => {
+          const itemText = item.inline?.length ? flattenInline(item.inline) : item.content;
+          return `\u2022 ${itemText}`;
+        }).join('\n');
         return {
-          text: node.items.map((item) => `\u2022 ${item.content}`).join('\n'),
+          text: lText,
           options: { x, y, w: 9, h: 1.0, fontSize: 12, valign: 'top' },
           height: 1.1,
         };
+      }
       case 'code':
         return {
           text: node.content,
           options: { x, y, w: 9, h: 0.8, fontSize: 10, fontFace: 'Courier New', fill: { color: 'F5F5F5' } },
           height: 0.9,
         };
-      case 'quote':
+      case 'quote': {
+        const qText = node.inline?.length ? flattenInline(node.inline) : node.content;
+        const qAuthor = node.author ? ` — ${node.author}` : '';
         return {
-          text: `"${node.content}"`,
+          text: `"${qText}"${qAuthor}`,
           options: { x, y, w: 9, h: 0.6, fontSize: 12, italic: true, color: '555555' },
           height: 0.7,
         };
-      case 'table':
+      }
+      case 'table': {
+        const tRows = node.rows?.map(r => r.join(' | ')).join('\n') || '';
         return {
-          text: node.headers.join(' | '),
+          text: tRows ? `${node.headers.join(' | ')}\n${tRows}` : node.headers.join(' | '),
           options: { x, y, w: 9, h: 0.5, fontSize: 10 },
           height: 0.6,
         };
+      }
       default:
         return null;
     }

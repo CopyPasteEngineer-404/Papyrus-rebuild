@@ -1,16 +1,16 @@
-import { Database } from 'bun:sqlite';
+import Database from 'better-sqlite3';
 import { generateId } from '../../shared/utils';
 import type { FileNode, InputFormat } from '../../shared/types';
 
 export class FileRepository {
-  private db: Database;
-  private stmtUpsert: ReturnType<Database['prepare']>;
-  private stmtFindByWorkspace: ReturnType<Database['prepare']>;
-  private stmtFindById: ReturnType<Database['prepare']>;
-  private stmtDeleteByPath: ReturnType<Database['prepare']>;
-  private stmtDeleteById: ReturnType<Database['prepare']>;
+  private db: Database.Database;
+  private stmtUpsert: Database.Statement;
+  private stmtFindByWorkspace: Database.Statement;
+  private stmtFindById: Database.Statement;
+  private stmtDeleteByPath: Database.Statement;
+  private stmtDeleteById: Database.Statement;
 
-  constructor(db: Database) {
+  constructor(db: Database.Database) {
     this.db = db;
 
     this.stmtUpsert = db.prepare(

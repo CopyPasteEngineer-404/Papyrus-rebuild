@@ -100,8 +100,10 @@ export class Pipeline {
     let firstTitle = '';
 
     for (const filePath of filePaths) {
-      const content = await fs.readFile(filePath, 'utf-8');
+      const raw = await fs.readFile(filePath);
       const format = filePath.split('.').pop()?.toLowerCase();
+      const binaryFormats = ['docx', 'xlsx', 'pptx', 'epub'];
+      const content = binaryFormats.includes(format || '') ? raw.toString('latin1') : raw.toString('utf-8');
 
       const parser = registry.getParser(format as any);
       if (!parser) {

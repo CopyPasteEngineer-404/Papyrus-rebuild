@@ -14,6 +14,7 @@ import {
   IRImageNode,
   IRFootnoteNode,
   IRReferenceNode,
+  IRDiagramNode,
   flattenInline,
 } from '../../shared/types';
 import { sanitizeFilename } from '../../shared/utils';
@@ -91,7 +92,7 @@ export class TxtWorker extends BaseWorker {
       case 'reference':
         return this.renderReference(node as IRReferenceNode);
       case 'diagram':
-        return `[Diagram: ${node.type}]`;
+        return `[Diagram: ${(node as IRDiagramNode).content}]`;
       case 'pageBreak':
         return '---';
       case 'toc':

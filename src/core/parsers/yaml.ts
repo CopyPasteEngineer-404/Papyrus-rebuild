@@ -1,8 +1,15 @@
-import * as yaml from 'yaml';
 import { ParseInput, IRDocument } from '../../shared/types';
-import { IRBuilder } from '../ir/builder';
+import { IRBuilder, SectionBuilder } from '../ir/builder';
 import { generateId } from '../../shared/utils';
 import type { Parser } from '../registry';
+
+let yamlModule: any = null;
+async function loadYaml() {
+  if (!yamlModule) {
+    yamlModule = await import('yaml');
+  }
+  return yamlModule;
+}
 
 export const yamlParser: Parser = {
   id: 'yaml',
@@ -13,6 +20,7 @@ export const yamlParser: Parser = {
     const text = new TextDecoder().decode(content).trimStart();
     if (text[0] === '{' || text[0] === '[') return false;
     try {
+      const yaml = await loadYaml();
       const parsed = yaml.parse(text);
       return parsed !== null && parsed !== undefined;
     } catch {
@@ -22,7 +30,13 @@ export const yamlParser: Parser = {
 
   async parse(input: ParseInput): Promise<IRDocument> {
     const builder = new IRBuilder().setSourceFile(input.filePath);
-    const data = yaml.parse(input.content);
+    let data: unknown;
+    try {
+      const yaml = await loadYaml();
+      data = yaml.parse(input.content);
+    } catch (err) {
+      throw new Error(`YAML parsing failed: ${err instanceof Error ? err.message : String(err)}`);
+    }
 
     const title =
       input.options?.title ||
@@ -51,7 +65,7 @@ function extractTitle(data: unknown, filePath: string): string | null {
   return null;
 }
 
-function processValue(data: unknown, builder: IRBuilder): void {
+function processValue(data: unknown, builder: IRBuilder | SectionBuilder): void {
   if (data === null || data === undefined) {
     return;
   }
@@ -111,13 +125,13 @@ function processValue(data: unknown, builder: IRBuilder): void {
         builder.addParagraph(`**${key}:** _null_`);
       } else if (typeof value === 'object' && !Array.isArray(value)) {
         const section = builder.addSection(2, key);
-        processValue(value, builder);
+        processValue(value, section);
       } else if (Array.isArray(value) && value.length > 0 && value.every((v) => typeof v === 'object' && v !== null && !Array.isArray(v))) {
         const section = builder.addSection(2, key);
-        processValue(value, builder);
+        processValue(value, section);
       } else if (Array.isArray(value)) {
-        builder.addSection(2, key);
-        processValue(value, builder);
+        const section = builder.addSection(2, key);
+        processValue(value, section);
       } else {
         builder.addParagraph(`**${key}:** ${stringifyValue(value)}`);
       }

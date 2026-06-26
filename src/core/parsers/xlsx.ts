@@ -2,7 +2,14 @@ import { ParseInput, IRDocument } from '../../shared/types';
 import { IRBuilder } from '../ir/builder';
 import { generateId } from '../../shared/utils';
 import type { Parser } from '../registry';
-import * as XLSX from 'xlsx';
+
+let xlsxModule: any = null;
+async function loadXLSX() {
+  if (!xlsxModule) {
+    xlsxModule = await import('xlsx');
+  }
+  return xlsxModule;
+}
 
 export const xlsxParser: Parser = {
   id: 'xlsx',
@@ -31,8 +38,20 @@ export const xlsxParser: Parser = {
   },
 
   async parse(input: ParseInput): Promise<IRDocument> {
+    if (!input.content || input.content.length === 0) {
+      return new IRBuilder().setSourceFile(input.filePath).setTitle('Empty XLSX').build();
+    }
+
     const buffer = Buffer.from(input.content, 'binary');
-    const workbook = XLSX.read(buffer, { type: 'buffer' });
+
+    const XLSX = await loadXLSX();
+
+    let workbook: any;
+    try {
+      workbook = XLSX.read(buffer, { type: 'buffer' });
+    } catch (err) {
+      throw new Error(`XLSX parsing failed: ${err instanceof Error ? err.message : String(err)}`);
+    }
 
     const builder = new IRBuilder();
     builder.setSourceFile(input.filePath);
@@ -45,7 +64,7 @@ export const xlsxParser: Parser = {
       for (const sheetName of sheetNames) {
         const sectionBuilder = builder.addSection(1, sheetName);
         const worksheet = workbook.Sheets[sheetName];
-        const table = worksheetToTable(worksheet);
+        const table = worksheetToTable(worksheet, XLSX);
         if (table) {
           sectionBuilder.addTable(table.headers, table.rows);
         }
@@ -55,7 +74,7 @@ export const xlsxParser: Parser = {
       const sheetName = sheetNames[0];
       if (sheetName) {
         const worksheet = workbook.Sheets[sheetName];
-        const table = worksheetToTable(worksheet);
+        const table = worksheetToTable(worksheet, XLSX);
         if (table) {
           builder.addTable(table.headers, table.rows);
         }
@@ -76,7 +95,7 @@ interface TableData {
   rows: string[][];
 }
 
-function worksheetToTable(worksheet: XLSX.WorkSheet): TableData | null {
+function worksheetToTable(worksheet: any, XLSX: any): TableData | null {
   const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
   const totalRows = range.e.r - range.s.r + 1;
   const totalCols = range.e.c - range.s.c + 1;
@@ -117,7 +136,7 @@ function worksheetToTable(worksheet: XLSX.WorkSheet): TableData | null {
   return null;
 }
 
-function formatCellValue(cell: XLSX.CellObject | undefined): string {
+function formatCellValue(cell: any): string {
   if (!cell) return '';
 
   if (cell.w !== undefined) {

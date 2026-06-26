@@ -1,6 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
-import { WorkerInput, WorkerResult, GeneratedArtifact, IRDocument, IRBlockNode, IRTableNode, IRSectionNode, IRParagraphNode } from '../../shared/types';
+import { WorkerInput, WorkerResult, GeneratedArtifact, IRDocument, IRBlockNode, IRTableNode, IRSectionNode, IRParagraphNode, flattenInline } from '../../shared/types';
 import { sanitizeFilename } from '../../shared/utils';
 import type { Worker } from '../registry';
 import { findNodesByType } from '../ir/traversal';
@@ -45,6 +45,8 @@ function flattenTextContent(doc: IRDocument): string[] {
         const para = node as IRParagraphNode;
         if (para.content) {
           textLines.push(para.content);
+        } else if (para.inline?.length) {
+          textLines.push(flattenInline(para.inline));
         }
         break;
       }

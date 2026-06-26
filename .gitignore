@@ -5,6 +5,10 @@ node_modules/
 dist/
 *.tsbuildinfo
 
+# Neutralino binaries
+bin/
+.tmp/
+
 # Environment
 .env
 .env.local
@@ -39,7 +43,12 @@ test-fixtures/
 .idea/
 *.sublime-*
 
-# Electron builder
+# Neutralino binaries
+.tmp/
+neutralino-*.exe
+neutralino-*
+
+# Electron builder (legacy)
 release/
 *.exe
 *.dmg

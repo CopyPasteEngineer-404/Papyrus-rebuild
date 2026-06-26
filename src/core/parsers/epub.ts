@@ -1,7 +1,14 @@
-import epub from 'epub2';
 import { ParseInput, IRDocument } from '../../shared/types';
 import { IRBuilder } from '../ir/builder';
 import type { Parser } from '../registry';
+
+let epubModule: any = null;
+async function loadEpub() {
+  if (!epubModule) {
+    epubModule = (await import('epub2')).default;
+  }
+  return epubModule;
+}
 
 interface EpubChapter {
   id: string;
@@ -23,7 +30,8 @@ interface EpubInstance {
   getFile(id: string, callback: (err: Error | null, data: Buffer) => void): void;
 }
 
-function openEpub(filePath: string): Promise<EpubInstance> {
+async function openEpub(filePath: string): Promise<EpubInstance> {
+  const epub = await loadEpub();
   return new Promise((resolve, reject) => {
     epub.open(filePath, (err: Error | null, data: EpubInstance) => {
       if (err) return reject(err);
@@ -111,7 +119,9 @@ export const epubParser: Parser = {
   },
 
   async parse(input: ParseInput): Promise<IRDocument> {
-    const book = await openEpub(input.filePath);
+    const book = await openEpub(input.filePath).catch((e: Error) => {
+      throw new Error(`Failed to open EPUB: ${e.message}`);
+    });
     const builder = new IRBuilder().setSourceFile(input.filePath);
 
     const docTitle =

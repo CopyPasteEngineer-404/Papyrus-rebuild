@@ -47,7 +47,7 @@ export function registerConvertCommand(program: Command): void {
         process.exit(1);
       }
 
-      const outputDir = options.output || process.cwd();
+      const outputDir = options.output ? path.resolve(options.output) : process.cwd();
 
       // Resolve and validate input files
       const resolvedInputs: Array<{ path: string; format: InputFormat }> = [];

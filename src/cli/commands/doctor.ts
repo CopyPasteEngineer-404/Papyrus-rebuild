@@ -2,6 +2,7 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import ora from 'ora';
 import fs from 'fs/promises';
+import path from 'path';
 import os from 'os';
 import { registerAllParsers } from '../../core/parsers';
 import { registerAllWorkers } from '../../core/workers';
@@ -100,7 +101,7 @@ export function registerDoctorCommand(program: Command): void {
       checks.push(await runCheck('Temp Directory', async () => {
         const tmpDir = os.tmpdir();
         const testFile = `.papyrus-doctor-test-${Date.now()}`;
-        const testPath = `${tmpDir}/${testFile}`;
+        const testPath = path.join(tmpDir, testFile);
         try {
           await fs.writeFile(testPath, 'test');
           await fs.unlink(testPath);
@@ -114,7 +115,7 @@ export function registerDoctorCommand(program: Command): void {
       checks.push(await runCheck('Working Directory', async () => {
         const cwd = process.cwd();
         const testFile = `.papyrus-doctor-cwd-test-${Date.now()}`;
-        const testPath = `${cwd}/${testFile}`;
+        const testPath = path.join(cwd, testFile);
         try {
           await fs.writeFile(testPath, 'test');
           await fs.unlink(testPath);
@@ -128,9 +129,9 @@ export function registerDoctorCommand(program: Command): void {
       checks.push(await runCheck('Database', async () => {
         try {
           const { getDatabaseConnection, closeDatabaseConnection } = await import('../../db/connection');
-          const conn = await getDatabaseConnection();
-          await closeDatabaseConnection();
-          return { name: 'Database', status: 'pass', message: 'SQLite (bun:sqlite) available, DB initialized' };
+          const conn = getDatabaseConnection();
+          closeDatabaseConnection();
+          return { name: 'Database', status: 'pass', message: 'SQLite (better-sqlite3) available, DB initialized' };
         } catch (error) {
           return { name: 'Database', status: 'warn', message: `Database check skipped: ${error instanceof Error ? error.message : String(error)}` };
         }

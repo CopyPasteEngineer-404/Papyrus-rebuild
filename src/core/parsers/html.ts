@@ -1,12 +1,20 @@
-import * as cheerio from 'cheerio';
+import type { CheerioAPI, Cheerio } from 'cheerio';
 import { ParseInput, IRDocument, IRBlockNode, IRInlineNode } from '../../shared/types';
 import { IRBuilder, SectionBuilder } from '../ir/builder';
 import { generateId } from '../../shared/utils';
 import type { Parser } from '../registry';
 
+let cheerioModule: any = null;
+async function loadCheerio() {
+  if (!cheerioModule) {
+    cheerioModule = await import('cheerio');
+  }
+  return cheerioModule;
+}
+
 type BuilderLike = IRBuilder | SectionBuilder;
 
-function parseInlineFromHtml($: cheerio.CheerioAPI, el: cheerio.Cheerio<any>): IRInlineNode[] {
+function parseInlineFromHtml($: CheerioAPI, el: Cheerio<any>): IRInlineNode[] {
   const nodes: IRInlineNode[] = [];
   el.contents().each((_, child) => {
     if (!child) return;
@@ -63,7 +71,13 @@ export const htmlParser: Parser = {
   },
 
   async parse(input: ParseInput): Promise<IRDocument> {
-    const $ = cheerio.load(input.content);
+    let $: CheerioAPI;
+    try {
+      const cheerio = await loadCheerio();
+      $ = cheerio.load(input.content);
+    } catch (err) {
+      throw new Error(`HTML parsing failed: ${err instanceof Error ? err.message : String(err)}`);
+    }
     const builder = new IRBuilder().setSourceFile(input.filePath);
 
     const title =
@@ -73,7 +87,7 @@ export const htmlParser: Parser = {
       'Untitled HTML Document';
     builder.setTitle(title);
 
-    function getText(el: cheerio.Cheerio<any>): string {
+    function getText(el: Cheerio<any>): string {
       return el.text().trim().replace(/\s+/g, ' ');
     }
 
@@ -103,8 +117,8 @@ export const htmlParser: Parser = {
 };
 
 function processNode(
-  $: cheerio.CheerioAPI,
-  el: cheerio.Cheerio<any>,
+  $: CheerioAPI,
+  el: Cheerio<any>,
   builder: IRBuilder,
   parentBuilder?: BuilderLike,
 ) {

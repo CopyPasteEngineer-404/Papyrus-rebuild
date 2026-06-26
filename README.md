@@ -87,7 +87,6 @@ src/
 ├── cli/          # Commander CLI + interactive REPL
 ├── core/         # Pipeline, parsers (13), workers (10), registry, scheduler
 ├── db/           # SQLite database layer
-├── desktop/      # Desktop app (Electrobun — blocked from install)
 ├── shared/       # Types, constants, schemas, utilities
 └── types/        # Format-specific type definitions
 ```
@@ -95,7 +94,7 @@ src/
 Pipeline flow:
 
 ```
-Source File → Format Parser → Intermediate Representation → Workers → Output File
+Source File -> Format Parser -> Intermediate Representation -> Workers -> Output File
 ```
 
 - **13 parsers**: md, csv, txt, mermaid, latex, docx, xlsx, pptx, html, json, yaml, rtf, epub
@@ -103,13 +102,13 @@ Source File → Format Parser → Intermediate Representation → Workers → Ou
 
 ## Tech Stack
 
-- **Runtime**: Node.js ≥ 18, TypeScript
+- **Runtime**: Node.js >= 18, TypeScript
 - **CLI**: Commander, Chalk, tsx (runner)
 - **Pipeline**: Custom pipeline with registry, scheduler, worker pool
 - **Database**: SQLite (better-sqlite3)
 - **Conversion**: pdf-lib, docx, mammoth, xlsx, pptxgenjs, epub-gen, cheerio, rtf-parser, yaml
 
-No heavy frameworks, no monorepo overhead. Flat `src/` structure, zero runtime dependencies beyond what's listed.
+No heavy frameworks, no monorepo overhead. Flat `src/` structure.
 
 ## Scripts
 
@@ -121,10 +120,6 @@ No heavy frameworks, no monorepo overhead. Flat `src/` structure, zero runtime d
 | `npm test` | Run tests |
 | `npm run typecheck` | TypeScript type check |
 | `npm run lint` | ESLint |
-
-## Desktop App
-
-A desktop build exists at `src/desktop/` (Electrobun + React + Vite + Tailwind) but is blocked — `electrobun` cannot be installed via npm on this environment (`Invalid Version` crash). CLI is the primary delivery vehicle.
 
 ## License
 

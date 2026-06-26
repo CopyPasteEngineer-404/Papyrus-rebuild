@@ -3,7 +3,6 @@
     "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "jsx": "react-jsx",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -11,15 +10,12 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "lib": ["ES2022"],
     "paths": {
       "@/*": ["./src/*"],
       "@core/*": ["./src/core/*"],
       "@db/*": ["./src/db/*"],
-      "@shared/*": ["./src/shared/*"],
-      "@components/*": ["./src/desktop/renderer/components/*"],
-      "@stores/*": ["./src/desktop/renderer/stores/*"],
-      "@hooks/*": ["./src/desktop/renderer/hooks/*"]
+      "@shared/*": ["./src/shared/*"]
     }
   },
   "include": ["src/**/*"],

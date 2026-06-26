@@ -49,7 +49,7 @@ export class PDFWorker implements Worker {
           .replace(/\u274C/g, '[No]')    // ❌
           .replace(/\u2714/g, '[x]')     // ✔
           .replace(/\u2716/g, '[x]')     // ✖
-          .replace(/\u{1F000}-\u{1FFFF}/gu, '') // Strip other emoji
+          .replace(/[\u{1F000}-\u{1FFFF}]/gu, '') // Strip other emoji
           .replace(/[^\x00-\x7F\u00A0-\u00FF\u0152\u0153\u0160\u0161\u0178\u017D\u017E]/g, '');
       };
 

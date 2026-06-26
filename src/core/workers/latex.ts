@@ -7,8 +7,8 @@ import { walkIR, findNodesByType } from '../ir/traversal';
 
 function escapeLatex(text: string): string {
   return text
-    .replace(/\\/g, '\\textbackslash{}')
-    .replace(/([&%$#_{}~^])/g, '\\$1');
+    .replace(/([&%$#_{}~^])/g, '\\$1')
+    .replace(/\\/g, '\\textbackslash{}');
 }
 
 function renderInlineNodes(nodes: IRInlineNode[]): string {
@@ -170,7 +170,8 @@ function renderTable(node: IRTableNode): string {
 
 function renderCode(node: IRCodeNode): string {
   const lang = node.language || '';
-  return `\\begin{lstlisting}[language=${lang}]\n${node.content}\n\\end{lstlisting}\n`;
+  const langParam = lang ? `[language=${lang}]` : '';
+  return `\\begin{lstlisting}${langParam}\n${node.content}\n\\end{lstlisting}\n`;
 }
 
 function renderQuote(node: IRQuoteNode): string {
@@ -209,7 +210,7 @@ function renderFootnote(node: IRFootnoteNode): string {
 }
 
 function renderReference(node: IRReferenceNode): string {
-  return `\\label{ref:${node.label}}\n`;
+  return `${node.content}\\label{ref:${node.label}}\n`;
 }
 
 function buildPreamble(title: string): string {
