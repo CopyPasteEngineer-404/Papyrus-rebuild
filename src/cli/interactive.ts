@@ -7,6 +7,7 @@ import { detectFormat, formatFileSize, setLogLevel } from '../shared/utils';
 import { Pipeline } from '../core/pipeline';
 import type { InputFormat, OutputFormat } from '../shared/types';
 import { printHeader } from './utils';
+import { showManual } from './commands/manual';
 
 interface FileInfo {
   index: number;
@@ -233,6 +234,7 @@ function buildHelpBox(): string {
     ['dir history', 'Show visited directory paths'],
     ['back', 'Reset selection & directories'],
     ['clear', 'Clear screen'],
+    ['manual', 'Show full user manual'],
     ['help', 'Show this help'],
     ['exit / quit', 'Exit'],
   ];
@@ -303,7 +305,7 @@ export async function startInteractive(): Promise<void> {
   setLogLevel('error');
   printHeader();
   console.log(`  ${chalk.gray("Enter directory path: cd ...\\folder with files to convert")}`);
-  console.log(`  ${chalk.gray("Type 'help' for commands, 'exit' to quit.")}`);
+  console.log(`  ${chalk.gray("Type 'manual' for full instructions, 'help' for quick reference.")}`);
   console.log('');
 
   const rl = readline.createInterface({
@@ -399,6 +401,11 @@ export async function startInteractive(): Promise<void> {
 
     if (input === 'help') {
       console.log('\n' + buildHelpBox() + '\n');
+      continue;
+    }
+
+    if (input === 'manual') {
+      showManual();
       continue;
     }
 

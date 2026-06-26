@@ -31,6 +31,7 @@ npm-debug.log*
 *.db-shm
 *.db-wal
 *.corrupted.*
+.papyrus-theme
 
 # Conversion output
 converted/

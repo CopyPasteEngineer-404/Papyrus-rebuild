@@ -1,6 +1,6 @@
 <img src="papyrus-banner.svg" alt="Papyrus — Offline-first document transformation engine">
 
-# Papyrus
+# Papyrus v1.0.0
 
 **Offline-first document transformation engine — convert any format to any format.**
 
@@ -39,22 +39,25 @@ papyrus> 1 3 4
 papyrus> 1->pdf 3->txt 4->html
 ```
 
+Type `manual` inside the REPL for full instructions with examples.
+
 Commands:
 
 | Command | Description |
 |---------|-------------|
 | `cd <path>` | Change directory, then add more dirs |
+| `add cd` | Add another directory |
 | `nshow` | Toggle auto-show after cd |
 | `nshow <path>` | Change dir without file list |
 | `show` | Show files (selected only if any) |
 | `<N> <M>` | Add files to selection |
 | `rem <N>,<M>` | Remove files from selection |
 | `N-><fmt>` | Convert file N to format |
-| `add cd` | Add another directory |
 | `dir history` | Show visited directory paths |
 | `back` | Reset selection & directories |
 | `clear` | Clear screen |
-| `help` | Show help |
+| `manual` | Show full user manual |
+| `help` | Show quick command reference |
 | `exit / quit` | Exit |
 
 ### One-shot conversion
@@ -75,6 +78,7 @@ npm run papy -- batch ./docs --to pdf --all
 ### Other commands
 
 ```bash
+npm run papy -- manual         # Show full user manual
 npm run papy -- formats        # List all formats
 npm run papy -- doctor         # System diagnostics
 npm run papy -- watch <dir>    # Watch directory for changes
@@ -84,7 +88,7 @@ npm run papy -- watch <dir>    # Watch directory for changes
 
 ```
 src/
-├── cli/          # Commander CLI + interactive REPL
+├── cli/          # Commander CLI + interactive REPL + commands
 ├── core/         # Pipeline, parsers (13), workers (10), registry, scheduler
 ├── db/           # SQLite database layer
 ├── shared/       # Types, constants, schemas, utilities
